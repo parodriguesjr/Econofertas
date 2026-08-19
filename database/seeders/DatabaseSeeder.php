@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\Supermarket;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -15,9 +16,18 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        User::updateOrCreate(['email' => 'admin@econofertas.local'], [
+            'name' => 'Administrador',
+            'password' => 'admin123',
         ]);
+
+        collect([
+            ['name' => 'Mercado Central', 'color' => '#177245', 'description' => 'Ofertas frescas para toda a família.'],
+            ['name' => 'Super Econômico', 'color' => '#D7432F', 'description' => 'Preço baixo perto de você.'],
+            ['name' => 'Bom Vizinho', 'color' => '#1769AA', 'description' => 'Tudo para a sua casa.'],
+        ])->each(fn ($market) => Supermarket::firstOrCreate(
+            ['slug' => \Illuminate\Support\Str::slug($market['name'])],
+            $market + ['is_active' => true]
+        ));
     }
 }
