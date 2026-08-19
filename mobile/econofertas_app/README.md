@@ -26,3 +26,15 @@ flutter build apk --release --dart-define=API_BASE_URL=https://seu-dominio.com/a
 ```
 
 A saída fica em `build/app/outputs/flutter-apk/app-release.apk`.
+
+## iOS
+
+O mesmo código é compatível com iPhone. Em um Mac com Xcode e CocoaPods:
+
+```bash
+flutter pub get
+flutter run -d ios
+flutter build ipa --release --dart-define=API_BASE_URL=https://seu-dominio.com/api
+```
+
+Assinatura e publicação exigem uma conta Apple Developer configurada no Xcode.
