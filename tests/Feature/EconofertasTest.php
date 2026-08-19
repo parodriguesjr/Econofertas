@@ -61,4 +61,21 @@ class EconofertasTest extends TestCase
 
         $this->get('/supermercados/mercado')->assertOk()->assertDontSee('Antigo');
     }
+
+    public function test_api_lists_markets_and_only_available_flyers(): void
+    {
+        $market = Supermarket::create(['name' => 'Mercado Mobile', 'slug' => 'mobile', 'color' => '#177245', 'is_active' => true]);
+        Flyer::create(['supermarket_id' => $market->id, 'title' => 'Folheto atual', 'file_path' => 'flyers/current.pdf', 'is_published' => true]);
+        Flyer::create(['supermarket_id' => $market->id, 'title' => 'Rascunho', 'file_path' => 'flyers/draft.pdf', 'is_published' => false]);
+
+        $this->getJson('/api/supermercados')
+            ->assertOk()
+            ->assertJsonPath('data.0.slug', 'mobile')
+            ->assertJsonPath('data.0.flyers_count', 1);
+
+        $this->getJson('/api/supermercados/mobile')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.flyers')
+            ->assertJsonPath('data.flyers.0.title', 'Folheto atual');
+    }
 }

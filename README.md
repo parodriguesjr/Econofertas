@@ -43,3 +43,21 @@ php artisan test
 ```
 
 Arquivos `.env`, bancos SQLite, PDFs enviados, logs, dependências e outros dados locais não são versionados.
+
+## Aplicativo Android
+
+O projeto Flutter está em `mobile/econofertas_app`. Para executar no emulador Android com o Laravel local:
+
+```powershell
+php artisan serve --host=0.0.0.0 --port=8000
+cd mobile/econofertas_app
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api
+```
+
+Para gerar uma versão conectada ao servidor de produção, substitua a URL:
+
+```powershell
+flutter build apk --release --dart-define=API_BASE_URL=https://seu-dominio.com/api
+```
+
+Nunca use a URL de desenvolvimento `10.0.2.2` para distribuir o aplicativo a usuários finais.

@@ -6,6 +6,7 @@
 /storage/*.key
 /storage/pail
 /vendor
+/releases/*.apk
 .env
 .env.backup
 .env.production
