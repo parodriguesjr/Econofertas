@@ -28,6 +28,12 @@ class EconofertasTest extends TestCase
         $this->get('/admin/folhetos')->assertRedirect('/admin/entrar');
     }
 
+    public function test_admin_login_is_hidden_through_quick_tunnel(): void
+    {
+        $this->get('https://teste.trycloudflare.com/admin/entrar')
+            ->assertNotFound();
+    }
+
     public function test_user_can_log_in_to_admin_panel(): void
     {
         $user = User::factory()->create(['password' => 'segredo123']);

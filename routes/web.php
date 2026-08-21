@@ -6,18 +6,19 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Models\Flyer;
 use App\Models\Supermarket;
+use App\Http\Middleware\BlockTunnelAdmin;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/supermercados/{supermarket:slug}', [HomeController::class, 'supermarket'])->name('supermarkets.show');
 Route::get('/folhetos/{flyer}/visualizar', [HomeController::class, 'flyer'])->name('flyers.view');
 
-Route::middleware('guest')->group(function () {
+Route::middleware([BlockTunnelAdmin::class, 'guest'])->group(function () {
     Route::get('/admin/entrar', [AuthController::class, 'create'])->name('login');
     Route::post('/admin/entrar', [AuthController::class, 'store'])->name('login.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
+Route::prefix('admin')->name('admin.')->middleware([BlockTunnelAdmin::class, 'auth'])->group(function () {
     Route::get('/', fn () => view('admin.dashboard', [
         'supermarketsCount' => Supermarket::count(),
         'flyersCount' => Flyer::count(),

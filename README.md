@@ -61,3 +61,19 @@ flutter build apk --release --dart-define=API_BASE_URL=https://seu-dominio.com/a
 ```
 
 Nunca use a URL de desenvolvimento `10.0.2.2` para distribuir o aplicativo a usuários finais.
+
+### Teste pela internet com Cloudflare
+
+Um Quick Tunnel cria uma URL HTTPS temporária sem exigir domínio ou conta:
+
+```powershell
+cloudflared tunnel --url http://127.0.0.1:8000
+```
+
+Depois gere o APK usando a URL exibida pelo comando:
+
+```powershell
+flutter build apk --release --dart-define=API_BASE_URL=https://URL-DO-TUNEL.trycloudflare.com/api
+```
+
+O painel administrativo é bloqueado quando acessado por `trycloudflare.com` e continua disponível localmente. Quick Tunnels são apenas para testes: a URL muda quando o processo reinicia e o computador precisa permanecer ligado.
