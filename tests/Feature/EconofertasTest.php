@@ -68,6 +68,24 @@ class EconofertasTest extends TestCase
         $this->get('/supermercados/mercado')->assertOk()->assertDontSee('Antigo');
     }
 
+    public function test_flyer_ending_today_can_be_opened(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('flyers/today.pdf', '%PDF-1.4 test');
+        $market = Supermarket::create(['name' => 'Mercado', 'slug' => 'mercado', 'color' => '#177245', 'is_active' => true]);
+        $flyer = Flyer::create([
+            'supermarket_id' => $market->id,
+            'title' => 'Válido hoje',
+            'file_path' => 'flyers/today.pdf',
+            'ends_at' => today(),
+            'is_published' => true,
+        ]);
+
+        $this->get(route('flyers.view', $flyer))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+    }
+
     public function test_api_lists_markets_and_only_available_flyers(): void
     {
         $market = Supermarket::create(['name' => 'Mercado Mobile', 'slug' => 'mobile', 'color' => '#177245', 'is_active' => true]);
@@ -79,9 +97,11 @@ class EconofertasTest extends TestCase
             ->assertJsonPath('data.0.slug', 'mobile')
             ->assertJsonPath('data.0.flyers_count', 1);
 
-        $this->getJson('/api/supermercados/mobile')
+        $this->withHeader('X-Forwarded-Proto', 'https')
+            ->getJson('https://teste.trycloudflare.com/api/supermercados/mobile')
             ->assertOk()
             ->assertJsonCount(1, 'data.flyers')
-            ->assertJsonPath('data.flyers.0.title', 'Folheto atual');
+            ->assertJsonPath('data.flyers.0.title', 'Folheto atual')
+            ->assertJsonPath('data.flyers.0.pdf_url', 'https://teste.trycloudflare.com/folhetos/1/visualizar');
     }
 }

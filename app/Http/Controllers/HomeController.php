@@ -28,7 +28,7 @@ class HomeController extends Controller
     public function flyer(Flyer $flyer): Response
     {
         abort_unless($flyer->is_published && $flyer->supermarket->is_active && Storage::disk('local')->exists($flyer->file_path), 404);
-        abort_if($flyer->starts_at?->isFuture() || $flyer->ends_at?->isPast(), 404);
+        abort_if($flyer->starts_at?->isAfter(today()) || $flyer->ends_at?->isBefore(today()), 404);
         return response(Storage::disk('local')->get($flyer->file_path), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="folheto.pdf"',

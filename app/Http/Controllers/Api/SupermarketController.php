@@ -31,12 +31,16 @@ class SupermarketController extends Controller
     {
         abort_unless($supermarket->is_active, 404);
 
+        $forwardedProto = request()->header('X-Forwarded-Proto');
+        $scheme = $forwardedProto ? trim(explode(',', $forwardedProto)[0]) : request()->getScheme();
+        $publicBaseUrl = $scheme.'://'.request()->getHost();
+
         $flyers = $supermarket->flyers()->available()->latest('starts_at')->get()->map(fn ($flyer) => [
             'id' => $flyer->id,
             'title' => $flyer->title,
             'starts_at' => $flyer->starts_at?->toDateString(),
             'ends_at' => $flyer->ends_at?->toDateString(),
-            'pdf_url' => route('flyers.view', $flyer),
+            'pdf_url' => $publicBaseUrl.route('flyers.view', $flyer, false),
         ]);
 
         return response()->json([
