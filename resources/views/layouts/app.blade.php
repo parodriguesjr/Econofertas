@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#12643f">
     <title>@yield('title', 'Econofertas')</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/offers.css') }}">
 </head>
 <body>
     <header class="site-header">

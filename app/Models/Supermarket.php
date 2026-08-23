@@ -21,4 +21,9 @@ class Supermarket extends Model
     {
         return $this->hasMany(Flyer::class);
     }
+
+    public function offers(): HasMany
+    {
+        return $this->hasMany(Offer::class);
+    }
 }

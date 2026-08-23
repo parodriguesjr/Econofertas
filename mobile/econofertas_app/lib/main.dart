@@ -114,6 +114,25 @@ class Flyer {
   );
 }
 
+class Offer {
+  const Offer({required this.name, required this.market, required this.price, required this.imageUrl, required this.sourceUrl, required this.isCheapest});
+  final String name;
+  final String market;
+  final double? price;
+  final String? imageUrl;
+  final String sourceUrl;
+  final bool isCheapest;
+
+  factory Offer.fromJson(Map<String, dynamic> json) => Offer(
+    name: json['name'] as String,
+    market: (json['supermarket'] as Map<String, dynamic>)['name'] as String,
+    price: (json['price'] as num?)?.toDouble(),
+    imageUrl: json['image_url'] as String?,
+    sourceUrl: json['source_url'] as String,
+    isCheapest: json['is_cheapest'] as bool? ?? false,
+  );
+}
+
 Color _parseColor(String value) {
   final hex = value.replaceFirst('#', '');
   return Color(int.parse('FF$hex', radix: 16));
@@ -145,6 +164,14 @@ class ApiService {
     return (data['flyers'] as List)
         .map((item) => Flyer.fromJson(item as Map<String, dynamic>))
         .toList();
+  }
+
+  static Future<List<Offer>> getOffers([String query = '']) async {
+    final uri = Uri.parse('$apiBaseUrl/ofertas').replace(queryParameters: query.trim().isEmpty ? null : {'q': query.trim()});
+    final response = await http.get(uri).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) throw Exception('Falha ao carregar ofertas');
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return (body['data'] as List).map((item) => Offer.fromJson(item as Map<String, dynamic>)).toList();
   }
 }
 
@@ -248,6 +275,13 @@ class _HomeScreenState extends State<HomeScreen> {
             Text('Econofertas', style: TextStyle(fontWeight: FontWeight.w800)),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Ofertas por produto',
+            icon: const Icon(Icons.local_offer_outlined),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OffersScreen())),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _load,
@@ -635,6 +669,66 @@ class FlyerTile extends StatelessWidget {
       ),
     ),
   );
+}
+
+class OffersScreen extends StatefulWidget {
+  const OffersScreen({super.key});
+  @override
+  State<OffersScreen> createState() => _OffersScreenState();
+}
+
+class _OffersScreenState extends State<OffersScreen> {
+  final controller = TextEditingController();
+  late Future<List<Offer>> offers = ApiService.getOffers();
+
+  void search() => setState(() => offers = ApiService.getOffers(controller.text));
+  @override
+  void dispose() { controller.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Ofertas em Nova Odessa')),
+    body: Column(children: [
+      Padding(padding: const EdgeInsets.all(16), child: TextField(
+        controller: controller,
+        textInputAction: TextInputAction.search,
+        onSubmitted: (_) => search(),
+        decoration: InputDecoration(hintText: 'Buscar produto', prefixIcon: const Icon(Icons.search), suffixIcon: IconButton(tooltip: 'Buscar', onPressed: search, icon: const Icon(Icons.arrow_forward))),
+      )),
+      Expanded(child: FutureBuilder<List<Offer>>(future: offers, builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+        if (snapshot.hasError) return _ErrorState(message: 'Não foi possível carregar as ofertas.', onRetry: () async => search());
+        final items = snapshot.data ?? [];
+        if (items.isEmpty) return const _EmptyState(message: 'Nenhuma oferta encontrada.');
+        return RefreshIndicator(onRefresh: () async => search(), child: GridView.builder(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 30),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: .67, crossAxisSpacing: 10, mainAxisSpacing: 10),
+          itemCount: items.length,
+          itemBuilder: (_, index) => OfferTile(offer: items[index]),
+        ));
+      })),
+    ]),
+  );
+}
+
+class OfferTile extends StatelessWidget {
+  const OfferTile({super.key, required this.offer});
+  final Offer offer;
+  @override
+  Widget build(BuildContext context) => Card(child: InkWell(
+    onTap: () => launchUrl(Uri.parse(offer.sourceUrl), mode: LaunchMode.externalApplication),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Expanded(child: Container(color: Colors.white, width: double.infinity, child: offer.imageUrl == null ? const Icon(Icons.local_offer_outlined, size: 48) : Image.network(offer.imageUrl!, fit: BoxFit.contain, errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined)))),
+      Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(offer.market, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF12643F), fontSize: 11, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 5),
+        SizedBox(height: 36, child: Text(offer.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+        const SizedBox(height: 7),
+        Text(offer.price == null ? 'Ver encarte' : 'R\$ ${offer.price!.toStringAsFixed(2).replaceAll('.', ',')}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF12643F))),
+        if (offer.isCheapest) const Text('Menor preço', style: TextStyle(fontSize: 11, color: Color(0xFFD7432F), fontWeight: FontWeight.w800)),
+      ])),
+    ]),
+  ));
 }
 
 class _LogoMark extends StatelessWidget {

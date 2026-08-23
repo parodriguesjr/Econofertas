@@ -4,12 +4,14 @@ use App\Http\Controllers\Admin\FlyerController;
 use App\Http\Controllers\Admin\SupermarketController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\OfferController;
+use App\Http\Middleware\BlockTunnelAdmin;
 use App\Models\Flyer;
 use App\Models\Supermarket;
-use App\Http\Middleware\BlockTunnelAdmin;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/ofertas', [OfferController::class, 'index'])->name('offers.index');
 Route::get('/supermercados/{supermarket:slug}', [HomeController::class, 'supermarket'])->name('supermarkets.show');
 Route::get('/folhetos/{flyer}/visualizar', [HomeController::class, 'flyer'])->name('flyers.view');
 

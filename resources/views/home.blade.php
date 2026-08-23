@@ -6,6 +6,7 @@
         <p class="eyebrow">Economize na próxima compra</p>
         <h1>Qual supermercado você quer consultar?</h1>
         <p class="lead">Escolha uma loja para ver os folhetos e ofertas disponíveis.</p>
+        <a class="button offer-entry" href="{{ route('offers.index') }}">Ver ofertas por produto</a>
     </div>
 </section>
 <section class="market-section">
