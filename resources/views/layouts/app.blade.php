@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#12643f">
     <title>@yield('title', 'Econofertas')</title>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/offers.css') }}">
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/offers.css">
 </head>
 <body>
     <header class="site-header">
@@ -21,3 +21,4 @@
     <footer><div class="container">Econofertas · Seus folhetos em um só lugar</div></footer>
 </body>
 </html>
+
