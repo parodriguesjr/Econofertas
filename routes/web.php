@@ -27,6 +27,7 @@ Route::prefix('admin')->name('admin.')->middleware([BlockTunnelAdmin::class, 'au
         'activeFlyersCount' => Flyer::available()->count(),
     ]))->name('dashboard');
     Route::resource('supermercados', SupermarketController::class)->parameters(['supermercados' => 'supermarket'])->except('show')->names('supermarkets');
+    Route::get('/folhetos/{flyer}/pre-visualizar', [FlyerController::class, 'preview'])->name('flyers.preview');
     Route::resource('folhetos', FlyerController::class)->parameters(['folhetos' => 'flyer'])->except('show')->names('flyers');
     Route::post('/sair', [AuthController::class, 'destroy'])->name('logout');
 });

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Flyer;
 use App\Models\Supermarket;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -34,6 +35,17 @@ class FlyerController extends Controller
     public function edit(Flyer $flyer): View
     {
         return view('admin.flyers.form', ['flyer' => $flyer, 'supermarkets' => Supermarket::orderBy('name')->get()]);
+    }
+
+    public function preview(Flyer $flyer): Response
+    {
+        abort_unless(Storage::disk('local')->exists($flyer->file_path), 404);
+
+        return response(Storage::disk('local')->get($flyer->file_path), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="folheto.pdf"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function update(Request $request, Flyer $flyer): RedirectResponse
