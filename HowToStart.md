@@ -31,13 +31,38 @@ O seeder configura dados iniciais e o acesso administrativo local documentado no
 
 ## 2. Iniciar site e API
 
-Em um terminal, na raiz:
+Em um terminal, na raiz. Para testar somente no próprio Mac, use:
 
 ```bash
 php artisan serve
 ```
 
 O site estará em `http://127.0.0.1:8000`. Páginas principais: `/`, `/ofertas`, `/admin/entrar`. A API JSON fica sob `/api`, por exemplo `/api/supermercados` e `/api/ofertas`.
+
+### Acesso pelo iPhone na rede local ou pelo Acesso Pessoal
+
+Para o iPhone acessar o Laravel, inicie o servidor escutando em todas as interfaces de rede do Mac:
+
+```bash
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+Conecte o iPhone e o Mac à mesma rede Wi-Fi. Também é possível ativar **Ajustes → Acesso Pessoal → Permitir Acesso a Outros** no iPhone e conectar o Mac à rede Wi-Fi criada pelo iPhone. No Mac, descubra o endereço IP da conexão ativa nas configurações de rede. Esse é o IP a usar no lugar de `IP-DO-MAC` abaixo; não use `127.0.0.1` no iPhone, pois esse endereço aponta para o próprio telefone.
+
+Antes de abrir o app, teste no Safari do iPhone:
+
+```text
+http://IP-DO-MAC:8000/api/supermercados
+```
+
+Se a resposta JSON aparecer, use essa mesma URL base ao iniciar o Flutter:
+
+```bash
+cd mobile/econofertas_app
+flutter run -d ID-DO-IPHONE --dart-define=API_BASE_URL=http://IP-DO-MAC:8000/api
+```
+
+O Mac precisa continuar conectado e com o Laravel rodando. Se o endereço não abrir, confira se o IP é o da interface conectada à rede do iPhone e se o firewall do macOS permite conexões de entrada na porta `8000`.
 
 Para que o navegador carregue os estilos e scripts durante desenvolvimento, em outro terminal na raiz:
 
@@ -82,7 +107,7 @@ Mantenha o Laravel iniciado. Informe ao app a URL base da API:
 
 - Emulador Android: `http://10.0.2.2:8000/api` (o endereço especial do emulador para alcançar o computador host).
 - Simulador iOS: `http://127.0.0.1:8000/api`.
-- Celular físico: `http://IP-DO-COMPUTADOR-NA-REDE:8000/api`; inicie Laravel com `php artisan serve --host=0.0.0.0 --port=8000` e permita o acesso na rede local.
+- Celular físico (incluindo iPhone no Acesso Pessoal): `http://IP-DO-COMPUTADOR-NA-REDE:8000/api`; inicie Laravel com `php artisan serve --host=0.0.0.0 --port=8000` e permita o acesso na rede local.
 
 Exemplo Android:
 

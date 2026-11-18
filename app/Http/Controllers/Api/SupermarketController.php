@@ -33,7 +33,7 @@ class SupermarketController extends Controller
 
         $forwardedProto = request()->header('X-Forwarded-Proto');
         $scheme = $forwardedProto ? trim(explode(',', $forwardedProto)[0]) : request()->getScheme();
-        $publicBaseUrl = $scheme.'://'.request()->getHost();
+        $publicBaseUrl = $scheme.'://'.request()->getHttpHost();
 
         $flyers = $supermarket->flyers()->available()->latest('starts_at')->get()->map(fn ($flyer) => [
             'id' => $flyer->id,

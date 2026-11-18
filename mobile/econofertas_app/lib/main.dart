@@ -11,11 +11,29 @@ const configuredApiBaseUrl = String.fromEnvironment(
   defaultValue: '',
 );
 
-String get apiBaseUrl => configuredApiBaseUrl.isNotEmpty
-    ? configuredApiBaseUrl
-    : Platform.isIOS
-    ? 'http://127.0.0.1:8000/api'
-    : 'http://10.0.2.2:8000/api';
+class ApiServerConfig {
+  static const _preferenceKey = 'api_base_url';
+
+  static String _baseUrl = configuredApiBaseUrl.isNotEmpty
+      ? configuredApiBaseUrl
+      : Platform.isIOS
+      ? 'http://172.20.10.6:8000/api'
+      : 'http://10.0.2.2:8000/api';
+
+  static String get baseUrl => _baseUrl;
+
+  static Future<void> restore() async {
+    final preferences = await SharedPreferences.getInstance();
+    _baseUrl = preferences.getString(_preferenceKey) ?? _baseUrl;
+  }
+
+  static Future<void> save(String value) async {
+    final normalized = value.trim().replaceFirst(RegExp(r'/+$'), '');
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_preferenceKey, normalized);
+    _baseUrl = normalized;
+  }
+}
 
 void main() => runApp(const EconofertasApp());
 
@@ -141,7 +159,7 @@ Color _parseColor(String value) {
 class ApiService {
   static Future<List<Supermarket>> getSupermarkets() async {
     final response = await http
-        .get(Uri.parse('$apiBaseUrl/supermercados'))
+        .get(Uri.parse('${ApiServerConfig.baseUrl}/supermercados'))
         .timeout(const Duration(seconds: 12));
     if (response.statusCode != 200) {
       throw Exception('Falha ao carregar lojas');
@@ -154,7 +172,7 @@ class ApiService {
 
   static Future<List<Flyer>> getFlyers(String slug) async {
     final response = await http
-        .get(Uri.parse('$apiBaseUrl/supermercados/$slug'))
+        .get(Uri.parse('${ApiServerConfig.baseUrl}/supermercados/$slug'))
         .timeout(const Duration(seconds: 12));
     if (response.statusCode != 200) {
       throw Exception('Falha ao carregar folhetos');
@@ -167,7 +185,7 @@ class ApiService {
   }
 
   static Future<List<Offer>> getOffers([String query = '']) async {
-    final uri = Uri.parse('$apiBaseUrl/ofertas').replace(queryParameters: query.trim().isEmpty ? null : {'q': query.trim()});
+    final uri = Uri.parse('${ApiServerConfig.baseUrl}/ofertas').replace(queryParameters: query.trim().isEmpty ? null : {'q': query.trim()});
     final response = await http.get(uri).timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) throw Exception('Falha ao carregar ofertas');
     final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -223,6 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
       error = null;
     });
     try {
+      await ApiServerConfig.restore();
       final results = await Future.wait([
         ApiService.getSupermarkets(),
         FavoriteStore.load(),
@@ -243,6 +262,20 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() => loading = false);
       }
     }
+  }
+
+  Future<void> _configureApiServer() async {
+    await ApiServerConfig.restore();
+    if (!mounted) return;
+
+    final baseUrl = await showDialog<String>(
+      context: context,
+      builder: (_) => ApiServerDialog(initialBaseUrl: ApiServerConfig.baseUrl),
+    );
+    if (baseUrl == null || !mounted) return;
+
+    await ApiServerConfig.save(baseUrl);
+    await _load();
   }
 
   Future<void> _toggleFavorite(String slug) async {
@@ -280,6 +313,11 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Ofertas por produto',
             icon: const Icon(Icons.local_offer_outlined),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OffersScreen())),
+          ),
+          IconButton(
+            tooltip: 'Configurar servidor',
+            icon: const Icon(Icons.dns_outlined),
+            onPressed: _configureApiServer,
           ),
         ],
       ),
@@ -394,6 +432,135 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
     ),
+  );
+}
+
+class ApiServerDialog extends StatefulWidget {
+  const ApiServerDialog({super.key, required this.initialBaseUrl});
+
+  final String initialBaseUrl;
+
+  @override
+  State<ApiServerDialog> createState() => _ApiServerDialogState();
+}
+
+class _ApiServerDialogState extends State<ApiServerDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _hostController;
+  late final TextEditingController _portController;
+  late String _scheme;
+
+  @override
+  void initState() {
+    super.initState();
+    final current = Uri.parse(widget.initialBaseUrl);
+    _hostController = TextEditingController(text: current.host);
+    _portController = TextEditingController(
+      text: current.hasPort ? current.port.toString() : '',
+    );
+    _scheme = current.scheme == 'https' ? 'https' : 'http';
+  }
+
+  @override
+  void dispose() {
+    _hostController.dispose();
+    _portController.dispose();
+    super.dispose();
+  }
+
+  String? _validateHost(String? value) {
+    final host = value?.trim() ?? '';
+    if (host.isEmpty) return 'Informe o IP ou domínio do servidor.';
+    if (host.contains('://') || host.contains('/') || host.contains(':')) {
+      return 'Digite apenas o IP ou domínio; a porta fica no campo abaixo.';
+    }
+    final parsed = Uri.tryParse('http://$host');
+    if (parsed == null || parsed.host != host || parsed.host.isEmpty) {
+      return 'Informe um IP ou domínio válido.';
+    }
+    return null;
+  }
+
+  String? _validatePort(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return null;
+    final port = int.tryParse(text);
+    if (port == null || port < 1 || port > 65535) {
+      return 'Informe uma porta entre 1 e 65535.';
+    }
+    return null;
+  }
+
+  void _save() {
+    if (!_formKey.currentState!.validate()) return;
+    final portText = _portController.text.trim();
+    final url = Uri(
+      scheme: _scheme,
+      host: _hostController.text.trim(),
+      port: portText.isEmpty ? null : int.parse(portText),
+      path: '/api',
+    );
+    Navigator.of(context).pop(url.toString());
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Servidor da API'),
+    content: Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DropdownButtonFormField<String>(
+            initialValue: _scheme,
+            decoration: const InputDecoration(labelText: 'Protocolo'),
+            items: const [
+              DropdownMenuItem(value: 'http', child: Text('HTTP')),
+              DropdownMenuItem(value: 'https', child: Text('HTTPS')),
+            ],
+            onChanged: (value) {
+              if (value != null) setState(() => _scheme = value);
+            },
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _hostController,
+            keyboardType: TextInputType.url,
+            decoration: const InputDecoration(
+              labelText: 'IP ou domínio',
+              hintText: '172.20.10.6',
+            ),
+            validator: _validateHost,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _portController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Porta',
+              hintText: '8000',
+            ),
+            validator: _validatePort,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'O endereço será salvo neste aparelho e usado para carregar lojas, ofertas e folhetos.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF657069)),
+          ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Cancelar'),
+      ),
+      FilledButton.icon(
+        onPressed: _save,
+        icon: const Icon(Icons.save_outlined),
+        label: const Text('Salvar e conectar'),
+      ),
+    ],
   );
 }
 
