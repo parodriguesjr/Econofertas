@@ -74,6 +74,11 @@ class FlyerController extends Controller
             'pdf' => [$pdfRequired ? 'required' : 'nullable', 'file', 'mimes:pdf', 'max:20480'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
+        ], [
+            'pdf.required' => 'Selecione um arquivo PDF.',
+            'pdf.uploaded' => 'O envio falhou. O PDF pode exceder o limite de upload configurado no servidor.',
+            'pdf.mimes' => 'O arquivo selecionado deve estar no formato PDF.',
+            'pdf.max' => 'O PDF deve ter no máximo 20 MB.',
         ]);
         unset($data['pdf']);
         $data['is_published'] = $request->boolean('is_published');
